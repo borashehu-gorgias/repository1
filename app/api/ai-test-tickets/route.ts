@@ -7,10 +7,26 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getSession();
 
-    if (!session.subdomain || !session.accessToken) {
+    // Accept either OAuth accessToken or direct longJWT login
+    if (!session.accessToken && !session.longJWT) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
+      );
+    }
+
+    // Check if user has provided API credentials
+    if (!session.gorgiasUsername || !session.gorgiasApiKey) {
+      return NextResponse.json(
+        { error: 'Gorgias API credentials required. Please configure them in Settings.' },
+        { status: 400 }
+      );
+    }
+
+    if (!session.subdomain) {
+      return NextResponse.json(
+        { error: 'Subdomain not found in session' },
+        { status: 400 }
       );
     }
 
@@ -25,11 +41,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create config for API client
+    // Create config for API client using stored credentials
     const config: Config = {
       gorgiasSubdomain: session.subdomain,
-      gorgiasApiKey: session.accessToken,
-      gorgiasUsername: session.userEmail || '',
+      gorgiasApiKey: session.gorgiasApiKey,
+      gorgiasUsername: session.gorgiasUsername,
       gorgiasClientId: process.env.GORGIAS_CLIENT_ID || '',
       gorgiasClientSecret: process.env.GORGIAS_CLIENT_SECRET || '',
       oauthRedirectUri: process.env.OAUTH_REDIRECT_URI || '',
@@ -137,22 +153,38 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getSession();
 
-    if (!session.subdomain || !session.accessToken) {
+    // Accept either OAuth accessToken or direct longJWT login
+    if (!session.accessToken && !session.longJWT) {
       return NextResponse.json(
         { error: 'Not authenticated' },
         { status: 401 }
       );
     }
 
-    // Create config for API client
+    // Check if user has provided API credentials
+    if (!session.gorgiasUsername || !session.gorgiasApiKey) {
+      return NextResponse.json(
+        { error: 'Gorgias API credentials required. Please configure them in Settings.' },
+        { status: 400 }
+      );
+    }
+
+    if (!session.subdomain) {
+      return NextResponse.json(
+        { error: 'Subdomain not found in session' },
+        { status: 400 }
+      );
+    }
+
+    // Create config for API client using stored credentials
     const config: Config = {
       gorgiasSubdomain: session.subdomain,
-      gorgiasApiKey: session.accessToken,
-      gorgiasUsername: session.userEmail || '',
+      gorgiasApiKey: session.gorgiasApiKey,
+      gorgiasUsername: session.gorgiasUsername,
       gorgiasClientId: process.env.GORGIAS_CLIENT_ID || '',
       gorgiasClientSecret: process.env.GORGIAS_CLIENT_SECRET || '',
       oauthRedirectUri: process.env.OAUTH_REDIRECT_URI || '',
