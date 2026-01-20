@@ -43,13 +43,13 @@ export default function AIEvaluationPage() {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch FAQ tickets');
+        throw new Error(data.error || 'Failed to fetch tickets');
       }
 
       setFaqTickets(data.tickets || []);
     } catch (err: any) {
       setError(err.message);
-      console.error('Error fetching FAQ tickets:', err);
+      console.error('Error fetching tickets:', err);
     } finally {
       setLoading(false);
     }
@@ -139,7 +139,7 @@ export default function AIEvaluationPage() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">AI Agent Evaluation</h1>
           <p className="text-gray-400">
-            Test your AI agent's responses against past FAQ tickets with good customer satisfaction
+            Test your AI agent's responses against past closed tickets
           </p>
         </div>
 
@@ -166,7 +166,7 @@ export default function AIEvaluationPage() {
                 : 'text-gray-400 hover:text-gray-300'
             }`}
           >
-            Source FAQ Tickets ({faqTickets.length})
+            Source Tickets ({faqTickets.length})
           </button>
           <button
             onClick={() => setActiveTab('test')}
@@ -218,7 +218,7 @@ export default function AIEvaluationPage() {
             {/* Tickets List */}
             {loading && faqTickets.length === 0 ? (
               <div className="bg-[#1a1f29] border border-gray-800 rounded-2xl p-8 text-center">
-                <p className="text-gray-400">Loading FAQ tickets...</p>
+                <p className="text-gray-400">Loading tickets...</p>
               </div>
             ) : (
               <AITicketsList

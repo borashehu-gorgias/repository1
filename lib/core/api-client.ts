@@ -252,62 +252,68 @@ export class GorgiasApiClient {
   }
 
   /**
-   * Fetch FAQ tickets with good CSAT scores
-   * GET /api/tickets with CSAT filtering
+   * Fetch FAQ tickets (optionally filtered by CSAT scores)
+   * GET /api/tickets with optional CSAT filtering
    */
-  async getFAQTicketsWithGoodCSAT(limit: number = 10): Promise<any[]> {
+  async getFAQTicketsWithGoodCSAT(limit: number = 10, requireCSAT: boolean = false): Promise<any[]> {
     try {
-      logger.info('Fetching FAQ tickets with good CSAT scores...');
+      logger.info('Fetching FAQ tickets...');
 
-      // Fetch more tickets to find ones with good CSAT
-      const fetchLimit = Math.max(limit * 10, 100);
+      // Fetch more tickets to account for filtering
+      const fetchLimit = Math.max(limit * 5, 50);
       const response = await this.client.get('/api/tickets', {
         params: {
           limit: fetchLimit,
           order_by: 'updated_datetime:desc',
-          // Filter for closed tickets with satisfaction ratings
           status: 'closed'
         }
       });
 
       const allTickets = response.data?.data || response.data || [];
 
-      // Filter for FAQ tickets with good CSAT (rating >= 4)
-      const faqTicketsWithGoodCSAT = allTickets.filter((ticket: any) => {
-        // Check if ticket has FAQ-related tags
-        const ticketTags = ticket.tags || [];
-        const isFAQ = ticketTags.some((tag: any) =>
-          tag.name?.toLowerCase().includes('faq') ||
-          tag.name?.toLowerCase().includes('question')
-        );
+      if (requireCSAT) {
+        // Filter for FAQ tickets with good CSAT (rating >= 4)
+        const faqTicketsWithGoodCSAT = allTickets.filter((ticket: any) => {
+          // Check if ticket has FAQ-related tags
+          const ticketTags = ticket.tags || [];
+          const isFAQ = ticketTags.some((tag: any) =>
+            tag.name?.toLowerCase().includes('faq') ||
+            tag.name?.toLowerCase().includes('question')
+          );
 
-        // Check CSAT score (satisfaction_score is typically 1-5, or could be in meta)
-        const hasGoodCSAT =
-          (ticket.satisfaction_score && ticket.satisfaction_score >= 4) ||
-          (ticket.meta?.satisfaction_rating && ticket.meta.satisfaction_rating >= 4);
-
-        return isFAQ && hasGoodCSAT;
-      });
-
-      // If not enough FAQ-tagged tickets, fall back to any tickets with good CSAT
-      let tickets = faqTicketsWithGoodCSAT.slice(0, limit);
-
-      if (tickets.length < limit) {
-        logger.warn(`Only found ${tickets.length} FAQ tickets with good CSAT, including other tickets with good CSAT...`);
-        const anyGoodCSAT = allTickets.filter((ticket: any) => {
+          // Check CSAT score (satisfaction_score is typically 1-5, or could be in meta)
           const hasGoodCSAT =
             (ticket.satisfaction_score && ticket.satisfaction_score >= 4) ||
             (ticket.meta?.satisfaction_rating && ticket.meta.satisfaction_rating >= 4);
-          return hasGoodCSAT && !faqTicketsWithGoodCSAT.includes(ticket);
+
+          return isFAQ && hasGoodCSAT;
         });
 
-        tickets = [...tickets, ...anyGoodCSAT].slice(0, limit);
-      }
+        // If not enough FAQ-tagged tickets, fall back to any tickets with good CSAT
+        let tickets = faqTicketsWithGoodCSAT.slice(0, limit);
 
-      logger.success(`Retrieved ${tickets.length} FAQ tickets with good CSAT`);
-      return tickets;
+        if (tickets.length < limit) {
+          logger.warn(`Only found ${tickets.length} FAQ tickets with good CSAT, including other tickets with good CSAT...`);
+          const anyGoodCSAT = allTickets.filter((ticket: any) => {
+            const hasGoodCSAT =
+              (ticket.satisfaction_score && ticket.satisfaction_score >= 4) ||
+              (ticket.meta?.satisfaction_rating && ticket.meta.satisfaction_rating >= 4);
+            return hasGoodCSAT && !faqTicketsWithGoodCSAT.includes(ticket);
+          });
+
+          tickets = [...tickets, ...anyGoodCSAT].slice(0, limit);
+        }
+
+        logger.success(`Retrieved ${tickets.length} FAQ tickets with good CSAT`);
+        return tickets;
+      } else {
+        // Just return recent closed tickets without CSAT filtering
+        const tickets = allTickets.slice(0, limit);
+        logger.success(`Retrieved ${tickets.length} tickets`);
+        return tickets;
+      }
     } catch (error: any) {
-      logger.error('Failed to fetch FAQ tickets with good CSAT:', error.message);
+      logger.error('Failed to fetch FAQ tickets:', error.message);
       throw new Error(`Failed to fetch FAQ tickets: ${error.message}`);
     }
   }

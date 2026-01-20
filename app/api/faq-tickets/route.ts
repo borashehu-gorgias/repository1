@@ -32,8 +32,8 @@ export async function GET(request: NextRequest) {
 
     const client = new GorgiasApiClient(config);
 
-    // Fetch FAQ tickets with good CSAT
-    const tickets = await client.getFAQTicketsWithGoodCSAT(limit);
+    // Fetch FAQ tickets (without CSAT requirement)
+    const tickets = await client.getFAQTicketsWithGoodCSAT(limit, false);
 
     // Fetch messages for each ticket
     const ticketsWithMessages = await Promise.all(
