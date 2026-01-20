@@ -264,8 +264,8 @@ export class GorgiasApiClient {
       const response = await this.client.get('/api/tickets', {
         params: {
           limit: fetchLimit,
-          order_by: 'updated_datetime:desc',
-          status: 'closed'
+          order_by: 'updated_datetime:desc'
+          // Don't filter by status - let's get all recent tickets
         }
       });
 
