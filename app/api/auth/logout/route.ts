@@ -1,0 +1,19 @@
+import { NextResponse } from 'next/server';
+import { getSession } from '@/lib/session';
+
+export async function POST() {
+  try {
+    const session = await getSession();
+
+    // Clear all session data
+    session.destroy();
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    console.error('[Logout] Error:', error.message);
+    return NextResponse.json(
+      { error: 'Logout failed' },
+      { status: 500 }
+    );
+  }
+}

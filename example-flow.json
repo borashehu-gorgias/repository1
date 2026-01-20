@@ -1,0 +1,44 @@
+{
+  "example_flow": {
+    "id": 123,
+    "name": "Order Status Inquiry",
+    "description": "Automatically handle customer inquiries about order status",
+    "enabled": true,
+    "conditions": [
+      {
+        "type": "message_contains",
+        "field": "body_text",
+        "operator": "contains",
+        "value": "order status"
+      },
+      {
+        "type": "channel",
+        "value": "email"
+      }
+    ],
+    "actions": [
+      {
+        "type": "send_response",
+        "message": "Thank you for contacting us. I'll help you check your order status."
+      },
+      {
+        "type": "add_tag",
+        "value": "order-inquiry"
+      }
+    ],
+    "triggers": [
+      {
+        "type": "new_message"
+      }
+    ],
+    "created_datetime": "2025-01-15T10:00:00Z",
+    "updated_datetime": "2025-01-20T14:30:00Z"
+  },
+  "expected_guidance": {
+    "key": "flow_123",
+    "name": "Order Status Inquiry",
+    "content": "Automatically handle customer inquiries about order status\n\n**Conditions:**\n1. message_contains: order status\n2. channel: email\n\n**Actions:**\n1. send_response: Thank you for contacting us. I'll help you check your order status.\n2. add_tag: order-inquiry\n\n**Triggers:**\n1. new_message",
+    "batch_datetime": "2025-11-24T20:45:00.000Z",
+    "review_action": "created"
+  }
+}

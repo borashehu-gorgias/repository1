@@ -1,0 +1,43 @@
+{
+  "name": "gorgias-flows-migrator",
+  "version": "1.0.0",
+  "description": "Migration tool to convert Gorgias Flows to AI Guidances",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --turbopack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "keywords": [
+    "gorgias",
+    "flows",
+    "migration",
+    "ai",
+    "guidance"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "autoprefixer": "^10.4.22",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.5",
+    "iron-session": "^8.0.4",
+    "jsonwebtoken": "^9.0.3",
+    "next": "^16.0.10",
+    "postcss": "^8.5.6",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "tailwindcss": "^4.1.17",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}
