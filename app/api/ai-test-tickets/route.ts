@@ -78,31 +78,38 @@ export async function POST(request: NextRequest) {
         }
 
         // Create new ticket data
+        // Note: Gorgias API expects specific format for ticket creation
         const ticketData = {
-          subject: `AI Test: ${sourceTicket.subject || 'Test Ticket'}`,
+          customer: {
+            email: sourceTicket.customer?.email || customerMessage.sender?.email || 'test@example.com',
+            name: sourceTicket.customer?.name || customerMessage.sender?.name || 'Test Customer'
+          },
           messages: [
             {
               channel: 'email',
               via: 'api',
-              from_agent: false,
-              sender: {
-                email: customerMessage.sender?.email || 'test@example.com',
-                name: customerMessage.sender?.name || 'Test Customer'
+              source: {
+                type: 'email',
+                from: {
+                  address: sourceTicket.customer?.email || customerMessage.sender?.email || 'test@example.com',
+                  name: sourceTicket.customer?.name || customerMessage.sender?.name || 'Test Customer'
+                },
+                to: [
+                  {
+                    address: `support@${session.subdomain}.gorgias.com`,
+                    name: 'Support'
+                  }
+                ]
               },
-              body_text: customerMessage.body_text || customerMessage.body_html || '',
-              body_html: customerMessage.body_html || customerMessage.body_text || ''
+              subject: `AI Test: ${sourceTicket.subject || 'Test Ticket'}`,
+              body_text: customerMessage.body_text || customerMessage.body_html?.replace(/<[^>]*>/g, '') || 'Test message',
+              body_html: customerMessage.body_html || `<p>${customerMessage.body_text || 'Test message'}</p>`
             }
           ],
-          customer: {
-            email: sourceTicket.customer?.email || 'test@example.com',
-            name: sourceTicket.customer?.name || 'Test Customer'
-          },
           tags: [
             { name: 'ai-agent-test' },
             { name: 'ai-evaluation' }
-          ],
-          channel: 'email',
-          via: 'api'
+          ]
         };
 
         // Add AI agent assignment if available

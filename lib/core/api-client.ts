@@ -45,7 +45,7 @@ export class GorgiasApiClient {
         if (error.response) {
           logger.error(
             `API Error: ${error.response.status} ${error.config?.url}`,
-            error.response.data
+            JSON.stringify(error.response.data, null, 2)
           );
         } else {
           logger.error('API Error:', error.message);
@@ -322,33 +322,7 @@ export class GorgiasApiClient {
    * Create a new ticket
    * POST /api/tickets
    */
-  async createTicket(ticketData: {
-    subject?: string;
-    messages: Array<{
-      channel: string;
-      via: string;
-      from_agent?: boolean;
-      sender: {
-        email?: string;
-        name?: string;
-      };
-      body_text?: string;
-      body_html?: string;
-    }>;
-    customer?: {
-      email?: string;
-      name?: string;
-    };
-    assignee_user?: {
-      id: number;
-    };
-    assignee_team?: {
-      id: number;
-    };
-    tags?: Array<{ name: string }>;
-    channel?: string;
-    via?: string;
-  }): Promise<any> {
+  async createTicket(ticketData: any): Promise<any> {
     try {
       if (this.config.dryRun) {
         logger.warn('[DRY RUN] Would create ticket:', ticketData);
