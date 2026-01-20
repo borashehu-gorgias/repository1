@@ -39,7 +39,7 @@ export default function AIEvaluationPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch('/api/faq-tickets?limit=10');
+      const response = await fetch('/api/faq-tickets?limit=20');
       const data = await response.json();
 
       if (!response.ok) {

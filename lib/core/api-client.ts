@@ -307,9 +307,49 @@ export class GorgiasApiClient {
         logger.success(`Retrieved ${tickets.length} FAQ tickets with good CSAT`);
         return tickets;
       } else {
-        // Just return recent closed tickets without CSAT filtering
-        const tickets = allTickets.slice(0, limit);
-        logger.success(`Retrieved ${tickets.length} tickets`);
+        // Filter for customer support related tickets
+        // Look for tickets with customer questions, support tags, or inquiries
+        const supportTickets = allTickets.filter((ticket: any) => {
+          // Skip spam, internal, or automated tickets
+          const ticketTags = ticket.tags || [];
+          const hasSpamTag = ticketTags.some((tag: any) =>
+            tag.name?.toLowerCase().includes('spam') ||
+            tag.name?.toLowerCase().includes('internal') ||
+            tag.name?.toLowerCase().includes('test') ||
+            tag.name?.toLowerCase().includes('bot')
+          );
+
+          if (hasSpamTag) return false;
+
+          // Prioritize tickets with support indicators
+          const hasSupportTag = ticketTags.some((tag: any) =>
+            tag.name?.toLowerCase().includes('support') ||
+            tag.name?.toLowerCase().includes('help') ||
+            tag.name?.toLowerCase().includes('question') ||
+            tag.name?.toLowerCase().includes('inquiry') ||
+            tag.name?.toLowerCase().includes('customer')
+          );
+
+          // Or has a subject that looks like a customer question
+          const hasQuestionSubject = ticket.subject && (
+            ticket.subject.includes('?') ||
+            ticket.subject.toLowerCase().includes('how') ||
+            ticket.subject.toLowerCase().includes('what') ||
+            ticket.subject.toLowerCase().includes('why') ||
+            ticket.subject.toLowerCase().includes('help') ||
+            ticket.subject.toLowerCase().includes('issue') ||
+            ticket.subject.toLowerCase().includes('problem')
+          );
+
+          return hasSupportTag || hasQuestionSubject;
+        });
+
+        // If we have enough support tickets, use those; otherwise fall back to all tickets
+        const tickets = supportTickets.length >= limit
+          ? supportTickets.slice(0, limit)
+          : [...supportTickets, ...allTickets.filter((t: any) => !supportTickets.includes(t))].slice(0, limit);
+
+        logger.success(`Retrieved ${tickets.length} tickets (${supportTickets.length} support-related)`);
         return tickets;
       }
     } catch (error: any) {
