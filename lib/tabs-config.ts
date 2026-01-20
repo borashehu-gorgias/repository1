@@ -11,6 +11,11 @@ export const tabs: Tab[] = [
     path: '/dashboard/flows-migrator',
   },
   {
+    id: 'ai-evaluation',
+    label: 'AI Evaluation',
+    path: '/dashboard/ai-evaluation',
+  },
+  {
     id: 'settings',
     label: 'Settings',
     path: '/dashboard/settings',

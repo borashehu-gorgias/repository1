@@ -250,4 +250,181 @@ export class GorgiasApiClient {
       throw new Error(`Failed to fetch ticket: ${error.message}`);
     }
   }
+
+  /**
+   * Fetch FAQ tickets with good CSAT scores
+   * GET /api/tickets with CSAT filtering
+   */
+  async getFAQTicketsWithGoodCSAT(limit: number = 10): Promise<any[]> {
+    try {
+      logger.info('Fetching FAQ tickets with good CSAT scores...');
+
+      // Fetch more tickets to find ones with good CSAT
+      const fetchLimit = Math.max(limit * 10, 100);
+      const response = await this.client.get('/api/tickets', {
+        params: {
+          limit: fetchLimit,
+          order_by: 'updated_datetime:desc',
+          // Filter for closed tickets with satisfaction ratings
+          status: 'closed'
+        }
+      });
+
+      const allTickets = response.data?.data || response.data || [];
+
+      // Filter for FAQ tickets with good CSAT (rating >= 4)
+      const faqTicketsWithGoodCSAT = allTickets.filter((ticket: any) => {
+        // Check if ticket has FAQ-related tags
+        const ticketTags = ticket.tags || [];
+        const isFAQ = ticketTags.some((tag: any) =>
+          tag.name?.toLowerCase().includes('faq') ||
+          tag.name?.toLowerCase().includes('question')
+        );
+
+        // Check CSAT score (satisfaction_score is typically 1-5, or could be in meta)
+        const hasGoodCSAT =
+          (ticket.satisfaction_score && ticket.satisfaction_score >= 4) ||
+          (ticket.meta?.satisfaction_rating && ticket.meta.satisfaction_rating >= 4);
+
+        return isFAQ && hasGoodCSAT;
+      });
+
+      // If not enough FAQ-tagged tickets, fall back to any tickets with good CSAT
+      let tickets = faqTicketsWithGoodCSAT.slice(0, limit);
+
+      if (tickets.length < limit) {
+        logger.warn(`Only found ${tickets.length} FAQ tickets with good CSAT, including other tickets with good CSAT...`);
+        const anyGoodCSAT = allTickets.filter((ticket: any) => {
+          const hasGoodCSAT =
+            (ticket.satisfaction_score && ticket.satisfaction_score >= 4) ||
+            (ticket.meta?.satisfaction_rating && ticket.meta.satisfaction_rating >= 4);
+          return hasGoodCSAT && !faqTicketsWithGoodCSAT.includes(ticket);
+        });
+
+        tickets = [...tickets, ...anyGoodCSAT].slice(0, limit);
+      }
+
+      logger.success(`Retrieved ${tickets.length} FAQ tickets with good CSAT`);
+      return tickets;
+    } catch (error: any) {
+      logger.error('Failed to fetch FAQ tickets with good CSAT:', error.message);
+      throw new Error(`Failed to fetch FAQ tickets: ${error.message}`);
+    }
+  }
+
+  /**
+   * Create a new ticket
+   * POST /api/tickets
+   */
+  async createTicket(ticketData: {
+    subject?: string;
+    messages: Array<{
+      channel: string;
+      via: string;
+      from_agent?: boolean;
+      sender: {
+        email?: string;
+        name?: string;
+      };
+      body_text?: string;
+      body_html?: string;
+    }>;
+    customer?: {
+      email?: string;
+      name?: string;
+    };
+    assignee_user?: {
+      id: number;
+    };
+    assignee_team?: {
+      id: number;
+    };
+    tags?: Array<{ name: string }>;
+    channel?: string;
+    via?: string;
+  }): Promise<any> {
+    try {
+      if (this.config.dryRun) {
+        logger.warn('[DRY RUN] Would create ticket:', ticketData);
+        return { dry_run: true, ticket: ticketData };
+      }
+
+      logger.info('Creating new ticket...');
+
+      const response = await this.client.post('/api/tickets', ticketData);
+
+      logger.success(`Successfully created ticket ${response.data.id}`);
+      return response.data;
+    } catch (error: any) {
+      logger.error('Failed to create ticket:', error.message);
+      throw new Error(`Failed to create ticket: ${error.message}`);
+    }
+  }
+
+  /**
+   * Add tags to a ticket
+   * PUT /api/tickets/{ticket_id}
+   */
+  async addTagsToTicket(ticketId: number, tags: string[]): Promise<any> {
+    try {
+      if (this.config.dryRun) {
+        logger.warn(`[DRY RUN] Would add tags to ticket ${ticketId}:`, tags);
+        return { dry_run: true, ticketId, tags };
+      }
+
+      logger.info(`Adding tags to ticket ${ticketId}...`);
+
+      // Get current ticket to preserve existing tags
+      const currentTicket = await this.getTicket(ticketId);
+      const existingTags = currentTicket.tags || [];
+
+      // Merge with new tags
+      const allTags = [
+        ...existingTags,
+        ...tags.map(name => ({ name }))
+      ];
+
+      // Update ticket with merged tags
+      const response = await this.client.put(`/api/tickets/${ticketId}`, {
+        tags: allTags
+      });
+
+      logger.success(`Successfully added tags to ticket ${ticketId}`);
+      return response.data;
+    } catch (error: any) {
+      logger.error(`Failed to add tags to ticket ${ticketId}:`, error.message);
+      throw new Error(`Failed to add tags: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get AI agent integrations
+   * GET /api/integrations to find AI agent integration
+   */
+  async getAIAgentIntegration(): Promise<any> {
+    try {
+      logger.info('Fetching AI agent integration...');
+
+      const response = await this.client.get('/api/integrations');
+      const integrations = response.data?.data || response.data || [];
+
+      // Find AI agent integration
+      const aiAgent = integrations.find((integration: any) =>
+        integration.type === 'ai-agent' ||
+        integration.name?.toLowerCase().includes('ai') ||
+        integration.name?.toLowerCase().includes('agent')
+      );
+
+      if (!aiAgent) {
+        logger.warn('No AI agent integration found');
+        return null;
+      }
+
+      logger.success(`Found AI agent integration: ${aiAgent.name || aiAgent.id}`);
+      return aiAgent;
+    } catch (error: any) {
+      logger.error('Failed to fetch AI agent integration:', error.message);
+      throw new Error(`Failed to fetch AI agent: ${error.message}`);
+    }
+  }
 }
