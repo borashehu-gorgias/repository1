@@ -32,7 +32,8 @@ export async function GET(request: NextRequest) {
 
     // Parse query parameters
     const searchParams = request.nextUrl.searchParams;
-    const limit = parseInt(searchParams.get('limit') || '10');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const viewName = searchParams.get('view') || 'new view'; // Default to 'new view'
 
     // Create config for API client using stored credentials
     const config: Config = {
@@ -48,8 +49,8 @@ export async function GET(request: NextRequest) {
 
     const client = new GorgiasApiClient(config);
 
-    // Fetch FAQ tickets (without CSAT requirement)
-    const tickets = await client.getFAQTicketsWithGoodCSAT(limit, false);
+    // Fetch FAQ tickets from the specified view
+    const tickets = await client.getFAQTicketsWithGoodCSAT(limit, false, viewName);
 
     // Fetch messages for each ticket
     const ticketsWithMessages = await Promise.all(

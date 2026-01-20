@@ -255,19 +255,44 @@ export class GorgiasApiClient {
    * Fetch FAQ tickets (optionally filtered by CSAT scores)
    * GET /api/tickets with optional CSAT filtering
    */
-  async getFAQTicketsWithGoodCSAT(limit: number = 10, requireCSAT: boolean = false): Promise<any[]> {
+  async getFAQTicketsWithGoodCSAT(limit: number = 10, requireCSAT: boolean = false, viewName?: string): Promise<any[]> {
     try {
-      logger.info('Fetching FAQ tickets...');
+      logger.info(`Fetching tickets${viewName ? ` from view "${viewName}"` : ''}...`);
+
+      // First, get the view ID if a view name is provided
+      let viewId: number | undefined;
+      if (viewName) {
+        try {
+          const viewsResponse = await this.client.get('/api/views');
+          const views = viewsResponse.data?.data || viewsResponse.data || [];
+          const view = views.find((v: any) =>
+            v.name?.toLowerCase() === viewName.toLowerCase()
+          );
+
+          if (view) {
+            viewId = view.id;
+            logger.info(`Found view "${viewName}" with ID: ${viewId}`);
+          } else {
+            logger.warn(`View "${viewName}" not found, falling back to all tickets`);
+          }
+        } catch (error: any) {
+          logger.warn(`Failed to fetch views: ${error.message}, falling back to all tickets`);
+        }
+      }
 
       // Fetch more tickets to account for filtering
-      const fetchLimit = Math.max(limit * 5, 50);
-      const response = await this.client.get('/api/tickets', {
-        params: {
-          limit: fetchLimit,
-          order_by: 'updated_datetime:desc'
-          // Don't filter by status - let's get all recent tickets
-        }
-      });
+      const fetchLimit = Math.max(limit * 5, 100);
+      const params: any = {
+        limit: fetchLimit,
+        order_by: 'updated_datetime:desc'
+      };
+
+      // Add view filter if we found a view ID
+      if (viewId) {
+        params.view_id = viewId;
+      }
+
+      const response = await this.client.get('/api/tickets', { params });
 
       const allTickets = response.data?.data || response.data || [];
 
